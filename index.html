@@ -1,0 +1,655 @@
+
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#211812">
+<meta name="description" content="MANGYSTAU HERITAGE — Маңғыстаудың табиғи, тарихи және мәдени мұрасын зерттеуге арналған цифрлық платформа.">
+<title>MANGYSTAU HERITAGE | Маңғыстау мұрасы</title>
+
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="stylesheet"
+ href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+<style>
+:root {
+  --bg:#211812;
+  --panel:#30241c;
+  --panel2:#3b2c21;
+  --gold:#d6ad70;
+  --text:#f5eee5;
+  --muted:#c2b3a3;
+  --line:#594536;
+  --blue:#83c8ff;
+}
+* { box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body {
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:Arial,Helvetica,sans-serif;
+  line-height:1.65;
+}
+a { color:var(--blue); }
+button,input,select { font:inherit; }
+button { cursor:pointer; }
+.container { width:min(1200px,92%); margin:auto; }
+header {
+  position:sticky; top:0; z-index:1000;
+  background:rgba(33,24,18,.96);
+  border-bottom:1px solid var(--line);
+  backdrop-filter:blur(14px);
+}
+.nav {
+  min-height:74px; display:flex; align-items:center;
+  justify-content:space-between; gap:20px; flex-wrap:wrap;
+  padding:12px 0;
+}
+.brand { color:var(--gold); font-weight:900; letter-spacing:2px; }
+.brand small { display:block; color:var(--muted); font-size:10px; letter-spacing:1px; }
+nav { display:flex; gap:17px; flex-wrap:wrap; align-items:center; }
+nav a { color:var(--text); text-decoration:none; font-size:13px; }
+nav a:hover { color:var(--gold); }
+.btn {
+  display:inline-block; padding:11px 17px; border-radius:10px;
+  border:1px solid var(--gold); background:var(--gold);
+  color:#24190f; font-weight:700; text-decoration:none;
+}
+.btn.secondary { background:transparent; color:var(--text); }
+.hero {
+  min-height:540px; display:flex; align-items:center;
+  background:
+    linear-gradient(90deg,rgba(23,16,12,.96),rgba(23,16,12,.65),rgba(23,16,12,.25)),
+    url("https://commons.wikimedia.org/wiki/Special:FilePath/Bozzhyra.jpg")
+    center/cover no-repeat,
+    var(--panel);
+  border-bottom:1px solid var(--line);
+}
+.hero-content { max-width:760px; padding:75px 0; }
+.eyebrow { color:var(--gold); text-transform:uppercase; letter-spacing:3px; font-size:12px; font-weight:bold; }
+h1 { font-size:clamp(38px,7vw,76px); line-height:1.05; margin:16px 0; }
+h2 { font-size:clamp(27px,4vw,39px); line-height:1.2; }
+h3 { line-height:1.3; }
+p { color:var(--muted); }
+.section { padding:68px 0; }
+.section-head { max-width:750px; margin-bottom:28px; }
+.section-head p { max-width:700px; }
+.stats { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:30px; }
+.stat { padding:18px; background:rgba(48,36,28,.9); border:1px solid var(--line); border-radius:14px; }
+.stat strong { display:block; color:var(--gold); font-size:27px; }
+.stat span { color:var(--muted); font-size:13px; }
+.grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px; }
+.card {
+  background:var(--panel); border:1px solid var(--line);
+  border-radius:17px; overflow:hidden; min-width:0;
+  transition:transform .2s,border-color .2s;
+}
+.card:hover { transform:translateY(-4px); border-color:var(--gold); }
+.card-body { padding:19px; }
+.card-body p { font-size:14px; }
+.photo {
+  height:180px; display:flex; align-items:end; padding:16px;
+  background:linear-gradient(135deg,#70523a,#30241c 80%);
+  color:#fff; font-weight:bold; position:relative; overflow:hidden;
+}
+.photo img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.photo span { position:relative; z-index:1; text-shadow:0 2px 8px #000; }
+.tag {
+  display:inline-block; font-size:11px; font-weight:bold;
+  color:var(--gold); border:1px solid #806344;
+  padding:4px 8px; border-radius:20px; margin-bottom:8px;
+}
+.card-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:15px; }
+.card-actions a,.card-actions button {
+  display:inline-block; padding:8px 10px; border-radius:8px;
+  border:1px solid var(--line); background:var(--panel2);
+  color:var(--text); text-decoration:none; font-size:12px;
+}
+.card-actions a:hover,.card-actions button:hover { border-color:var(--gold); }
+.controls { display:flex; gap:10px; flex-wrap:wrap; margin:22px 0; }
+.controls input,.controls select {
+  min-width:190px; flex:1; padding:12px;
+  background:var(--panel); color:var(--text);
+  border:1px solid var(--line); border-radius:10px;
+}
+.filters { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px; }
+.filters button {
+  padding:8px 13px; border:1px solid var(--line);
+  border-radius:30px; background:var(--panel); color:var(--text);
+}
+.filters button.active { background:var(--gold); color:#24190f; }
+#map { height:520px; border-radius:17px; border:1px solid var(--line); z-index:1; }
+.map-note { font-size:12px; }
+.leaflet-popup-content-wrapper,.leaflet-popup-tip { background:#30241c; color:#f5eee5; }
+.leaflet-popup-content a { color:#83c8ff; }
+.notice { padding:17px; border-left:3px solid var(--gold); background:var(--panel); border-radius:8px; }
+.two-col { display:grid; grid-template-columns:1fr 1fr; gap:22px; }
+.info-panel { background:var(--panel); padding:23px; border:1px solid var(--line); border-radius:15px; }
+.info-panel li { margin:9px 0; color:var(--muted); }
+.source-list li { margin:13px 0; }
+footer { padding:30px 0; border-top:1px solid var(--line); color:var(--muted); font-size:13px; }
+.admin-box { display:none; }
+.admin-box.visible { display:block; }
+.small { font-size:12px; color:var(--muted); }
+@media(max-width:850px) {
+  .grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .two-col { grid-template-columns:1fr; }
+  nav { gap:10px; }
+}
+@media(max-width:560px) {
+  .grid { grid-template-columns:1fr; }
+  .stats { grid-template-columns:1fr; }
+  .hero { min-height:460px; }
+  #map { height:430px; }
+  .nav { justify-content:center; }
+  nav { justify-content:center; }
+}
+</style>
+</head>
+
+<body>
+<header>
+  <div class="container nav">
+    <a class="brand" href="#home" style="text-decoration:none">
+      MANGYSTAU HERITAGE
+      <small id="brand-sub">МҰРАСЫМЫЗ — БОЛАШАҚҚА</small>
+    </a>
+    <nav>
+      <a href="#places" data-kk="Орындар" data-en="Places">Орындар</a>
+      <a href="#map-section" data-kk="Карта" data-en="Map">Карта</a>
+      <a href="#unesco" data-kk="ЮНЕСКО" data-en="UNESCO">ЮНЕСКО</a>
+      <a href="#tours" data-kk="Турлар" data-en="Tours">Турлар</a>
+      <a href="#heritage" data-kk="Мұраны сақтау" data-en="Preservation">Мұраны сақтау</a>
+    </nav>
+    <button class="btn secondary" id="langBtn" onclick="toggleLanguage()">EN</button>
+  </div>
+</header>
+
+<main>
+<section class="hero" id="home">
+  <div class="container hero-content">
+    <div class="eyebrow" data-kk="Қазақстан · Маңғыстау облысы" data-en="Kazakhstan · Mangystau Region">Қазақстан · Маңғыстау облысы</div>
+    <h1 data-kk="Маңғыстау мұрасы — ұрпаққа аманат" data-en="Mangystau Heritage — A Legacy for Generations">Маңғыстау мұрасы — ұрпаққа аманат</h1>
+    <p data-kk="Ұлы даланың тылсым ландшафттарын, киелі орындарын, тарихи ескерткіштері мен мәдени мұрасын бір цифрлық кеңістікте зерттеңіз." data-en="Explore the landscapes, sacred places, historical monuments and cultural heritage of the Mangystau region in one digital space.">Ұлы даланың тылсым ландшафттарын, киелі орындарын, тарихи ескерткіштері мен мәдени мұрасын бір цифрлық кеңістікте зерттеңіз.</p>
+    <div class="card-actions">
+      <a class="btn" href="#places" data-kk="Зерттеуді бастау →" data-en="Start exploring →">Зерттеуді бастау →</a>
+      <a class="btn secondary" href="#map-section" data-kk="Картадан көру" data-en="Explore the map">Картадан көру</a>
+    </div>
+    <div class="stats">
+      <div class="stat"><strong id="placeCount">0</strong><span data-kk="Каталогтағы орындар" data-en="Places in the catalogue">Каталогтағы орындар</span></div>
+      <div class="stat"><strong>5</strong><span data-kk="ЮНЕСКО тізіміндегі киелі кешеннің құрамдас нысандары" data-en="Sacred sites in the UNESCO property">ЮНЕСКО тізіміндегі киелі кешеннің құрамдас нысандары</span></div>
+      <div class="stat"><strong>2</strong><span data-kk="Сайт тілі" data-en="Website languages">Сайт тілі</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="unesco">
+<div class="container">
+  <div class="section-head">
+    <div class="eyebrow">UNESCO · WORLD HERITAGE</div>
+    <h2 data-kk="Маңғыстаудың бес киелі мұрасы" data-en="Five sacred heritage sites of Mangystau">Маңғыстаудың бес киелі мұрасы</h2>
+    <p data-kk="«Маңғыстаудың жартасты мешіттері және олармен байланысты киелі орындар» 2026 жылы ЮНЕСКО-ның Дүниежүзілік мұра тізіміне енгізілді. Бес орын бір ортақ сериялық мұра нысанын құрайды." data-en="Rock Mosques and Associated Sacred Sites of Mangystau was inscribed on the UNESCO World Heritage List in 2026. The five sites form one serial World Heritage property.">«Маңғыстаудың жартасты мешіттері және олармен байланысты киелі орындар» 2026 жылы ЮНЕСКО-ның Дүниежүзілік мұра тізіміне енгізілді. Бес орын бір ортақ сериялық мұра нысанын құрайды.</p>
+    <p><a href="https://whc.unesco.org/en/list/1760/" target="_blank" rel="noopener">UNESCO ресми парағы ↗</a></p>
+  </div>
+  <div class="grid" id="unescoCards"></div>
+</div>
+</section>
+
+<section class="section" id="places">
+<div class="container">
+  <div class="section-head">
+    <div class="eyebrow" data-kk="ЦИФРЛЫҚ ЭНЦИКЛОПЕДИЯ" data-en="DIGITAL ENCYCLOPEDIA">ЦИФРЛЫҚ ЭНЦИКЛОПЕДИЯ</div>
+    <h2 data-kk="Маңғыстауды таны" data-en="Discover Mangystau">Маңғыстауды таны</h2>
+    <p data-kk="Табиғи ландшафттардан бастап тарихи ескерткіштерге дейін. Әр нысанның картадағы орнын ашып, навигацияны іске қосуға болады." data-en="From natural landscapes to historical monuments. Open each place on the map or start navigation.">Табиғи ландшафттардан бастап тарихи ескерткіштерге дейін. Әр нысанның картадағы орнын ашып, навигацияны іске қосуға болады.</p>
+  </div>
+  <div class="controls">
+    <input id="searchInput" type="search" placeholder="Орынды іздеу..." aria-label="Search places">
+    <select id="categorySelect" aria-label="Category">
+      <option value="all">Барлық санат</option>
+      <option value="nature">Табиғат</option>
+      <option value="sacred">Киелі орын</option>
+      <option value="history">Тарихи мұра</option>
+    </select>
+  </div>
+  <div class="filters" id="filters">
+    <button class="active" data-filter="all">Барлығы</button>
+    <button data-filter="nature">Табиғат</button>
+    <button data-filter="sacred">Киелі орындар</button>
+    <button data-filter="history">Тарих</button>
+  </div>
+  <div class="grid" id="placeCards"></div>
+  <p class="small" data-kk="Ескерту: координаттары жуық деп белгіленген орындарды сапар алдында ресми картадан тексеріңіз." data-en="Note: verify approximate coordinates on an official map before travelling.">Ескерту: координаттары жуық деп белгіленген орындарды сапар алдында ресми картадан тексеріңіз.</p>
+</div>
+</section>
+
+<section class="section" id="map-section">
+<div class="container">
+  <div class="section-head">
+    <div class="eyebrow">INTERACTIVE MAP</div>
+    <h2 data-kk="Маңғыстаудың интерактивті картасы" data-en="Interactive map of Mangystau">Маңғыстаудың интерактивті картасы</h2>
+    <p data-kk="Белгішені басып, орын туралы ақпаратты көріңіз. «Навигация» сілтемесі Google Maps бағыттарын ашады." data-en="Select a marker to view details. The navigation link opens directions in Google Maps.">Белгішені басып, орын туралы ақпаратты көріңіз. «Навигация» сілтемесі Google Maps бағыттарын ашады.</p>
+  </div>
+  <div id="map" aria-label="Map of Mangystau heritage locations"></div>
+  <p class="map-note">© OpenStreetMap contributors · Leaflet</p>
+  <div class="card-actions">
+    <a href="https://www.openstreetmap.org/" target="_blank" rel="noopener">OpenStreetMap ↗</a>
+    <a href="https://whc.unesco.org/en/list/1760/maps/" target="_blank" rel="noopener">ЮНЕСКО картасы ↗</a>
+  </div>
+</div>
+</section>
+
+<section class="section" id="tours">
+<div class="container">
+  <div class="section-head">
+    <div class="eyebrow">TRAVEL GUIDE</div>
+    <h2 data-kk="Саяхат бағыттары" data-en="Travel routes">Саяхат бағыттары</h2>
+    <p data-kk="Бағалар мен қолжетімді күндер туроператорға байланысты өзгереді. Төмендегі байланыс сілтемелері арқылы нақты ақпарат сұраңыз." data-en="Prices and dates depend on the tour operator. Contact providers for current details.">Бағалар мен қолжетімді күндер туроператорға байланысты өзгереді. Төмендегі байланыс сілтемелері арқылы нақты ақпарат сұраңыз.</p>
+  </div>
+  <div class="grid">
+    <article class="card">
+      <div class="photo"><span>Бозжыра · Үстірт</span></div>
+      <div class="card-body">
+        <span class="tag">ТАБИҒАТ</span>
+        <h3 data-kk="Бозжыра бағыты" data-en="Bozzhyra route">Бозжыра бағыты</h3>
+        <p data-kk="Ақ жартастар мен Үстірттің ерекше бедерін зерттеу бағыты. Жол жағдайы мен маусымды алдын ала нақтылаңыз." data-en="Explore the white cliffs and distinctive landforms of Ustyurt. Check road conditions and season in advance.">Ақ жартастар мен Үстірттің ерекше бедерін зерттеу бағыты. Жол жағдайы мен маусымды алдын ала нақтылаңыз.</p>
+        <p><b data-kk="Баға:" data-en="Price:">Баға:</b> <span data-kk="оператордан нақтылаңыз" data-en="ask the operator">оператордан нақтылаңыз</span></p>
+        <div class="card-actions"><a href="https://www.google.com/maps/search/?api=1&query=Bozzhyra+Mangystau" target="_blank" rel="noopener">Карта ↗</a></div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="photo"><span>Бекет ата · Киелі мұра</span></div>
+      <div class="card-body">
+        <span class="tag">ЮНЕСКО</span>
+        <h3 data-kk="Киелі орындар бағыты" data-en="Sacred sites route">Киелі орындар бағыты</h3>
+        <p data-kk="Бекет ата, Шопан ата және басқа жартасты мешіттермен танысу. Қасиетті орындардағы тәртіпті сақтаңыз." data-en="Discover Beket Ata, Shopan Ata and other rock mosques. Respect local customs at sacred sites.">Бекет ата, Шопан ата және басқа жартасты мешіттермен танысу. Қасиетті орындардағы тәртіпті сақтаңыз.</p>
+        <p><b data-kk="Баға:" data-en="Price:">Баға:</b> <span data-kk="оператордан нақтылаңыз" data-en="ask the operator">оператордан нақтылаңыз</span></p>
+        <div class="card-actions"><a href="https://whc.unesco.org/en/list/1760/" target="_blank" rel="noopener">ЮНЕСКО ↗</a></div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="photo"><span>Шерқала · Боқты</span></div>
+      <div class="card-body">
+        <span class="tag">ТАБИҒАТ ЖӘНЕ ТАРИХ</span>
+        <h3 data-kk="Батыс Маңғыстау бағыты" data-en="Western Mangystau route">Батыс Маңғыстау бағыты</h3>
+        <p data-kk="Шерқала тауы мен Боқты маңындағы ландшафттарды зерттеу. Нақты бағыт пен көлік түрін алдын ала жоспарлаңыз." data-en="Explore the landscapes around Sherkala and Bokty. Plan the route and transport in advance.">Шерқала тауы мен Боқты маңындағы ландшафттарды зерттеу. Нақты бағыт пен көлік түрін алдын ала жоспарлаңыз.</p>
+        <p><b data-kk="Баға:" data-en="Price:">Баға:</b> <span data-kk="оператордан нақтылаңыз" data-en="ask the operator">оператордан нақтылаңыз</span></p>
+        <div class="card-actions"><a href="https://www.google.com/maps/search/?api=1&query=Sherkala+Mangystau" target="_blank" rel="noopener">Карта ↗</a></div>
+      </div>
+    </article>
+  </div>
+  <div class="notice" style="margin-top:20px">
+    <b data-kk="Тур ұйымдастырушыларымен байланыс" data-en="Contact tour operators">Тур ұйымдастырушыларымен байланыс</b>
+    <p data-kk="Операторлардың ресми парақшаларын тексеріп, баға, күн және қызмет құрамын тікелей сұраңыз." data-en="Check official operator profiles and confirm prices, dates and included services directly.">Операторлардың ресми парақшаларын тексеріп, баға, күн және қызмет құрамын тікелей сұраңыз.</p>
+    <div class="card-actions">
+      <!-- Ресми парақша сілтемелерін тексергеннен кейін осы жерге енгізіңіз -->
+      <a href="https://www.instagram.com/" target="_blank" rel="noopener">Instagram-нан іздеу ↗</a>
+      <a href="https://wa.me/" target="_blank" rel="noopener">WhatsApp ↗</a>
+    </div>
+  </div>
+</div>
+</section>
+
+<section class="section" id="heritage">
+<div class="container">
+  <div class="section-head">
+    <div class="eyebrow">PRESERVE OUR HERITAGE</div>
+    <h2 data-kk="Мұраны бірге сақтайық!" data-en="Let’s preserve our heritage!">Мұраны бірге сақтайық!</h2>
+    <p data-kk="Табиғи ландшафттар мен тарихи орындарды қорғау — әрбір саяхатшының жауапкершілігі." data-en="Protecting natural landscapes and historical sites is every traveller’s responsibility.">Табиғи ландшафттар мен тарихи орындарды қорғау — әрбір саяхатшының жауапкершілігі.</p>
+  </div>
+  <div class="two-col">
+    <div class="info-panel">
+      <h3 data-kk="Саяхатшы ережелері" data-en="Visitor guidelines">Саяхатшы ережелері</h3>
+      <ul>
+        <li data-kk="Қоқысты табиғатта қалдырмаңыз." data-en="Never leave rubbish in nature.">Қоқысты табиғатта қалдырмаңыз.</li>
+        <li data-kk="Жартастарға жазу жазбаңыз және тарихи құрылымдарға зақым келтірмеңіз." data-en="Do not write on rocks or damage historic structures.">Жартастарға жазу жазбаңыз және тарихи құрылымдарға зақым келтірмеңіз.</li>
+        <li data-kk="Қорғалатын аумақтардағы белгілер мен жергілікті ережелерді орындаңыз." data-en="Follow local rules and signs in protected areas.">Қорғалатын аумақтардағы белгілер мен жергілікті ережелерді орындаңыз.</li>
+        <li data-kk="Киелі орындарда жергілікті дәстүрлерді құрметтеңіз." data-en="Respect local traditions at sacred places.">Киелі орындарда жергілікті дәстүрлерді құрметтеңіз.</li>
+        <li data-kk="Сапар алдында ауа райын, жолды және байланыс мүмкіндігін тексеріңіз." data-en="Check weather, roads and communications before travelling.">Сапар алдында ауа райын, жолды және байланыс мүмкіндігін тексеріңіз.</li>
+      </ul>
+    </div>
+    <div class="info-panel">
+      <h3 data-kk="Ғылыми жоба және аудиогид" data-en="Research and audio guide">Ғылыми жоба және аудиогид</h3>
+      <p data-kk="Әрбір нысанды зерттегенде тарихи дереккөздерді, музей материалдарын және ғылыми жарияланымдарды салыстырыңыз. Аңыз бен құжатпен расталған фактіні бөлек көрсетіңіз." data-en="Compare historical sources, museum materials and scholarly publications. Clearly distinguish legends from documented facts.">Әрбір нысанды зерттегенде тарихи дереккөздерді, музей материалдарын және ғылыми жарияланымдарды салыстырыңыз. Аңыз бен құжатпен расталған фактіні бөлек көрсетіңіз.</p>
+      <p data-kk="Аудиогид үшін нысанның қысқаша сипаттамасын дыбыс жазбасымен толықтыруға болады." data-en="An audio guide can pair a short description of each place with a recorded narration.">Аудиогид үшін нысанның қысқаша сипаттамасын дыбыс жазбасымен толықтыруға болады.</p>
+    </div>
+  </div>
+</div>
+</section>
+
+<section class="section" id="sources">
+<div class="container">
+  <div class="section-head">
+    <div class="eyebrow">RESEARCH & SOURCES</div>
+    <h2 data-kk="Дереккөздер" data-en="Sources">Дереккөздер</h2>
+    <p data-kk="Тарихи және географиялық ақпаратты тексеруге арналған ресми ресурстар." data-en="Official resources for verifying historical and geographic information.">Тарихи және географиялық ақпаратты тексеруге арналған ресми ресурстар.</p>
+  </div>
+  <ul class="source-list">
+    <li><a href="https://whc.unesco.org/en/list/1760/" target="_blank" rel="noopener">UNESCO World Heritage Centre — Rock Mosques and Associated Sacred Sites of Mangystau</a></li>
+    <li><a href="https://whc.unesco.org/en/list/1760/maps/" target="_blank" rel="noopener">UNESCO — нысандардың географиялық координаттары</a></li>
+    <li><a href="https://www.gov.kz/" target="_blank" rel="noopener">Қазақстан Республикасы мемлекеттік органдарының ресми порталы</a></li>
+    <li><a href="https://commons.wikimedia.org/" target="_blank" rel="noopener">Wikimedia Commons — фотосуреттер мен олардың лицензиялары</a></li>
+    <li><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap — карта деректерін пайдалану шарттары</a></li>
+  </ul>
+</div>
+</section>
+
+<section class="section" id="admin">
+<div class="container">
+  <div class="section-head">
+    <div class="eyebrow">SITE TOOLS</div>
+    <h2 data-kk="Контентті басқару" data-en="Content tools">Контентті басқару</h2>
+    <p data-kk="Бұл қарапайым жергілікті редактор мәтін мен сипаттамаларды осы браузерде сақтайды. Ол серверлік әкімші панелі емес." data-en="This simple local editor saves text in this browser. It is not a server-side admin panel.">Бұл қарапайым жергілікті редактор мәтін мен сипаттамаларды осы браузерде сақтайды. Ол серверлік әкімші панелі емес.</p>
+  </div>
+  <button class="btn secondary" onclick="toggleAdmin()" data-kk="Редакторды ашу" data-en="Open editor">Редакторды ашу</button>
+  <div class="admin-box info-panel" id="adminBox" style="margin-top:18px">
+    <label for="editTitle" data-kk="Басты тақырып" data-en="Main title">Басты тақырып</label>
+    <input id="editTitle" style="width:100%;padding:12px;margin:8px 0;background:#211812;color:#fff;border:1px solid #594536;border-radius:8px">
+    <label for="editIntro" data-kk="Кіріспе мәтін" data-en="Introduction">Кіріспе мәтін</label>
+    <input id="editIntro" style="width:100%;padding:12px;margin:8px 0;background:#211812;color:#fff;border:1px solid #594536;border-radius:8px">
+    <div class="card-actions">
+      <button onclick="saveLocalContent()" data-kk="Осы браузерге сақтау" data-en="Save in this browser">Осы браузерге сақтау</button>
+      <button onclick="resetLocalContent()" data-kk="Әдепкі мәтінге қайтару" data-en="Reset text">Әдепкі мәтінге қайтару</button>
+    </div>
+    <p class="small" data-kk="GitHub-та жарияланған сайттың барлық қолданушысына өзгерісті көрсету үшін index.html кодын GitHub-та жаңарту қажет." data-en="To publish changes for all visitors, update index.html in GitHub.">GitHub-та жарияланған сайттың барлық қолданушысына өзгерісті көрсету үшін index.html кодын GitHub-та жаңарту қажет.</p>
+  </div>
+</div>
+</section>
+</main>
+
+<footer>
+<div class="container">
+  <b>MANGYSTAU HERITAGE</b>
+  <p data-kk="Маңғыстаудың тарихи-мәдени және табиғи мұрасын цифрлық сақтау платформасы." data-en="A digital platform for the historical, cultural and natural heritage of Mangystau.">Маңғыстаудың тарихи-мәдени және табиғи мұрасын цифрлық сақтау платформасы.</p>
+  <p>© <span id="year"></span> MANGYSTAU HERITAGE · <span data-kk="Білім беру және зерттеу мақсатында" data-en="For educational and research purposes">Білім беру және зерттеу мақсатында</span></p>
+</div>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const UNESCO_URL = "https://whc.unesco.org/en/list/1760/";
+
+const places = [
+ {
+  id:"beket", name:"Бекет ата", en:"Beket Ata",
+  category:"sacred", unesco:true,
+  lat:43.597133, lng:54.070158, exact:true,
+  desc:"Жартасты жынысқа ойылып жасалған киелі кешен. Жерасты мешіті мен некрополь Маңғыстаудың рухани мұрасының маңызды бөлігі.",
+  enDesc:"A sacred complex carved into rock, with an underground mosque and necropolis, forming an important part of Mangystau’s spiritual heritage."
+ },
+ {
+  id:"shopan", name:"Шопан ата", en:"Shopan Ata",
+  category:"sacred", unesco:true,
+  lat:43.548203, lng:53.387858, exact:true,
+  desc:"Жерасты мешіті мен көне қорымнан тұратын киелі кешен. Бекет ата дәстүрімен де байланысты зиярат орны.",
+  enDesc:"A sacred complex comprising an underground mosque and an old necropolis; also associated with the pilgrimage tradition of Beket Ata."
+ },
+ {
+  id:"karaman", name:"Қараман ата", en:"Karaman Ata",
+  category:"sacred", unesco:true,
+  lat:43.899778, lng:51.874944, exact:true,
+  desc:"Жерасты мешіті және кең аумақты тарихи қорымымен танылған киелі кешен.",
+  enDesc:"A sacred complex known for its underground mosque and extensive historic necropolis."
+ },
+ {
+  id:"shakpak", name:"Шақпақ ата", en:"Shakpak Ata",
+  category:"sacred", unesco:true,
+  lat:44.433556, lng:51.138889, exact:true,
+  desc:"Борлы жартасқа қашалған мешітімен, сәулеттік жоспарымен және эпиграфикалық мұрасымен ерекшеленетін ескерткіш.",
+  enDesc:"A monument notable for its mosque carved into chalk rock, architectural layout and epigraphic heritage."
+ },
+ {
+  id:"sultan", name:"Сұлтан үпі", en:"Sultan Epe",
+  category:"sacred", unesco:true,
+  lat:44.471722, lng:51.009750, exact:true,
+  desc:"Каспий жағалауына жақын орналасқан киелі кешен. Дәстүрде жолаушылар мен теңізшілердің пірімен байланыстырылады.",
+  enDesc:"A sacred complex near the Caspian coast, traditionally associated with the patron of travellers and sailors."
+ },
+ {
+  id:"bozzhyra", name:"Бозжыра", en:"Bozzhyra",
+  category:"nature", unesco:false,
+  lat:43.4100, lng:54.0800, exact:false,
+  desc:"Үстірттің ақ борлы жартастары мен ерекше геологиялық бедері арқылы танылған табиғи ландшафт.",
+  enDesc:"A natural landscape known for the white chalk cliffs and distinctive geological formations of Ustyurt."
+ },
+ {
+  id:"sherkala", name:"Шерқала тауы", en:"Mount Sherkala",
+  category:"nature", unesco:false,
+  lat:44.1690, lng:52.0040, exact:false,
+  desc:"Пішінімен ерекшеленетін жеке тау. Маңғыстаудың табиғи көрінісі мен жергілікті аңыздарында белгілі орын.",
+  enDesc:"A distinctive isolated mountain known for its shape and place in Mangystau’s landscape and local legends."
+ },
+ {
+  id:"kyzylkup", name:"Қызылқұп", en:"Kyzylkup",
+  category:"nature", unesco:false,
+  lat:43.3900, lng:52.9000, exact:false,
+  desc:"Түрлі түсті қабаттарымен танылған геологиялық ландшафт. Нақты нүктені сапар алдында картадан тексеріңіз.",
+  enDesc:"A geological landscape known for its colourful rock layers. Verify the exact destination point before travelling."
+ },
+ {
+  id:"bokty", name:"Боқты тауы", en:"Mount Bokty",
+  category:"nature", unesco:false,
+  lat:43.4200, lng:53.0000, exact:false,
+  desc:"Қабаттанып көрінетін бедерімен танылған тау. Координат картада бағдар ретінде берілген.",
+  enDesc:"A mountain known for its layered appearance. The displayed coordinates are approximate."
+ },
+ {
+  id:"torysh", name:"Торыш — шар тәрізді тастар алқабы", en:"Torysh — Valley of Spherical Concretions",
+  category:"nature", unesco:false,
+  lat:44.5100, lng:52.7000, exact:false,
+  desc:"Сыртқы пішіні шарға ұқсас табиғи тас түзілімдері кездесетін алқап.",
+  enDesc:"A valley featuring natural rock concretions with spherical forms."
+ },
+ {
+  id:"airakty", name:"Айрақты — Шомақ таулары", en:"Airakty–Shomak Mountains",
+  category:"nature", unesco:false,
+  lat:44.1800, lng:52.0000, exact:false,
+  desc:"Жартасты шыңдары мен аңғарлары арқылы танылған табиғи ландшафт.",
+  enDesc:"A natural landscape with distinctive rocky peaks and valleys."
+ },
+ {
+  id:"mangystau", name:"Маңғыстау облыстық тарихи-өлкетану музейі", en:"Mangystau Regional Museum",
+  category:"history", unesco:false,
+  lat:43.6500, lng:51.1600, exact:false,
+  desc:"Маңғыстау өңірінің тарихы, археологиясы мен мәдени мұрасы туралы дерек іздеуге болатын музей. Бару алдында мекенжайы мен жұмыс уақытын тексеріңіз.",
+  enDesc:"A museum resource for learning about the region’s history, archaeology and cultural heritage. Check its address and opening hours before visiting."
+ }
+];
+
+let lang = "kk";
+let activeFilter = "all";
+let map;
+let markers = {};
+
+const categoryName = {
+ nature:{kk:"Табиғат",en:"Nature"},
+ sacred:{kk:"Киелі орын",en:"Sacred site"},
+ history:{kk:"Тарихи мұра",en:"Historical heritage"}
+};
+
+function titleOf(p){ return lang==="kk" ? p.name : p.en; }
+function descOf(p){ return lang==="kk" ? p.desc : p.enDesc; }
+function categoryOf(p){ return categoryName[p.category][lang]; }
+
+function mapsUrl(p){
+ return `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}`;
+}
+function markerUrl(p){
+ return `https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}`;
+}
+
+function cardHTML(p){
+ const badge = p.unesco
+   ? `<span class="tag">UNESCO · 2026</span>`
+   : `<span class="tag">${categoryOf(p)}</span>`;
+ const precision = p.exact
+   ? (lang==="kk" ? "ЮНЕСКО координаттары" : "UNESCO coordinates")
+   : (lang==="kk" ? "Жуық координат" : "Approximate coordinates");
+ return `<article class="card">
+   <div class="photo"><span>${titleOf(p)}</span></div>
+   <div class="card-body">
+     ${badge}
+     <h3>${titleOf(p)}</h3>
+     <p>${descOf(p)}</p>
+     <p class="small">${precision}: ${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}</p>
+     <div class="card-actions">
+       <button onclick="focusPlace('${p.id}')">${lang==="kk"?"Картадан көру":"Show on map"}</button>
+       <a href="${mapsUrl(p)}" target="_blank" rel="noopener">${lang==="kk"?"Навигация ↗":"Directions ↗"}</a>
+       ${p.unesco ? `<a href="${UNESCO_URL}" target="_blank" rel="noopener">UNESCO ↗</a>` : ""}
+     </div>
+   </div>
+ </article>`;
+}
+
+function renderPlaces(){
+ const q = document.getElementById("searchInput").value.trim().toLocaleLowerCase();
+ const cat = document.getElementById("categorySelect").value;
+ const filtered = places.filter(p=>{
+   const matchesText = `${p.name} ${p.en} ${p.desc} ${p.enDesc}`.toLocaleLowerCase().includes(q);
+   const matchesFilter = activeFilter==="all" || p.category===activeFilter;
+   const matchesCat = cat==="all" || p.category===cat;
+   return matchesText && matchesFilter && matchesCat;
+ });
+ document.getElementById("placeCards").innerHTML = filtered.length
+   ? filtered.map(cardHTML).join("")
+   : `<p>${lang==="kk"?"Сәйкес орын табылмады.":"No matching places found."}</p>`;
+ document.getElementById("placeCount").textContent = places.length;
+}
+
+function renderUnesco(){
+ document.getElementById("unescoCards").innerHTML =
+   places.filter(p=>p.unesco).map(cardHTML).join("");
+}
+
+function initMap(){
+ if(!window.L){
+   document.getElementById("map").innerHTML =
+    "Карта жүктелмеді. Интернет байланысын тексеріңіз.";
+   return;
+ }
+ map = L.map("map").setView([43.9,52.7],7);
+ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
+   maxZoom:18,
+   attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+ }).addTo(map);
+
+ places.forEach(p=>{
+   const marker = L.marker([p.lat,p.lng]).addTo(map);
+   const precision = p.exact
+     ? (lang==="kk"?"ЮНЕСКО координаттары":"UNESCO coordinates")
+     : (lang==="kk"?"Жуық координаттар":"Approximate coordinates");
+   marker.bindPopup(`
+    <strong>${titleOf(p)}</strong><br>
+    ${descOf(p)}<br><br>
+    <small>${precision}: ${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}</small><br>
+    <a href="${mapsUrl(p)}" target="_blank" rel="noopener">${lang==="kk"?"Навигацияны ашу ↗":"Open directions ↗"}</a>
+    ${p.unesco ? `<br><a href="${UNESCO_URL}" target="_blank" rel="noopener">UNESCO ↗</a>` : ""}
+   `);
+   markers[p.id]=marker;
+ });
+}
+
+function focusPlace(id){
+ const p = places.find(x=>x.id===id);
+ if(!p) return;
+ document.getElementById("map-section").scrollIntoView({behavior:"smooth"});
+ if(map && markers[id]){
+   setTimeout(()=>{
+     map.setView([p.lat,p.lng],10);
+     markers[id].openPopup();
+   },350);
+ }
+}
+
+function toggleLanguage(){
+ lang = lang==="kk" ? "en" : "kk";
+ document.documentElement.lang=lang;
+ document.getElementById("langBtn").textContent=lang==="kk"?"EN":"ҚАЗ";
+ document.querySelectorAll("[data-kk][data-en]").forEach(el=>{
+   el.textContent=el.dataset[lang];
+ });
+ document.getElementById("searchInput").placeholder =
+   lang==="kk" ? "Орынды іздеу..." : "Search places...";
+ document.getElementById("categorySelect").options[0].text =
+   lang==="kk" ? "Барлық санат" : "All categories";
+ document.querySelectorAll("#filters button").forEach(b=>{
+   const f=b.dataset.filter;
+   const names = {
+     all:{kk:"Барлығы",en:"All"},
+     nature:{kk:"Табиғат",en:"Nature"},
+     sacred:{kk:"Киелі орындар",en:"Sacred sites"},
+     history:{kk:"Тарих",en:"History"}
+   };
+   b.textContent=names[f][lang];
+ });
+ renderPlaces();
+ renderUnesco();
+ if(map){
+   places.forEach(p=>{
+     if(markers[p.id]){
+       const precision=p.exact
+         ? (lang==="kk"?"ЮНЕСКО координаттары":"UNESCO coordinates")
+         : (lang==="kk"?"Жуық координаттар":"Approximate coordinates");
+       markers[p.id].setPopupContent(`
+        <strong>${titleOf(p)}</strong><br>${descOf(p)}<br><br>
+        <small>${precision}: ${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}</small><br>
+        <a href="${mapsUrl(p)}" target="_blank" rel="noopener">${lang==="kk"?"Навигацияны ашу ↗":"Open directions ↗"}</a>
+        ${p.unesco ? `<br><a href="${UNESCO_URL}" target="_blank" rel="noopener">UNESCO ↗</a>` : ""}
+       `);
+     }
+   });
+ }
+}
+
+document.getElementById("searchInput").addEventListener("input",renderPlaces);
+document.getElementById("categorySelect").addEventListener("change",renderPlaces);
+
+document.querySelectorAll("#filters button").forEach(button=>{
+ button.addEventListener("click",()=>{
+   activeFilter=button.dataset.filter;
+   document.querySelectorAll("#filters button").forEach(b=>b.classList.remove("active"));
+   button.classList.add("active");
+   renderPlaces();
+ });
+});
+
+const defaultTitle="Маңғыстау мұрасы — ұрпаққа аманат";
+const defaultIntro="Ұлы даланың тылсым ландшафттарын, киелі орындарын, тарихи ескерткіштері мен мәдени мұрасын бір цифрлық кеңістікте зерттеңіз.";
+
+function toggleAdmin(){
+ document.getElementById("adminBox").classList.toggle("visible");
+ document.getElementById("editTitle").value =
+  localStorage.getItem("mhTitle") || defaultTitle;
+ document.getElementById("editIntro").value =
+  localStorage.getItem("mhIntro") || defaultIntro;
+}
+function saveLocalContent(){
+ localStorage.setItem("mhTitle",document.getElementById("editTitle").value);
+ localStorage.setItem("mhIntro",document.getElementById("editIntro").value);
+ applyLocalContent();
+ alert(lang==="kk"?"Мәтін осы браузерде сақталды.":"Text saved in this browser.");
+}
+function applyLocalContent(){
+ const title=localStorage.getItem("mhTitle");
+ const intro=localStorage.getItem("mhIntro");
+ if(title) document.querySelector(".hero h1").textContent=title;
+ if(intro) document.querySelector(".hero-content > p").textContent=intro;
+}
+function resetLocalContent(){
+ localStorage.removeItem("mhTitle");
+ localStorage.removeItem("mhIntro");
+ document.querySelector(".hero h1").textContent =
+   lang==="kk" ? defaultTitle : "Mangystau Heritage — A Legacy for Generations";
+ document.querySelector(".hero-content > p").textContent =
+   lang==="kk" ? defaultIntro : "Explore the landscapes, sacred places, historical monuments and cultural heritage of the Mangystau region in one digital space.";
+}
+document.getElementById("year").textContent=new Date().getFullYear();
+
+renderPlaces();
+renderUnesco();
+applyLocalContent();
+initMap();
+</script>
+</body>
+</html>
